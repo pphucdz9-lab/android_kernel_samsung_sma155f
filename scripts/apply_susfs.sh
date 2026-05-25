@@ -1,5 +1,4 @@
 #!/bin/bash
-# Script tích hợp KernelSU Next + SUSFS (bản vá mới nhất từ GitLab)
 set -e
 
 echo "=== Setting up KernelSU Next ==="
@@ -10,12 +9,16 @@ fi
 curl -LSs https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh | bash -s next
 cd ..
 
-echo "=== Applying SUSFS patch to kernel ==="
+echo "=== Ensuring target directories exist ==="
+mkdir -p kernel-5.10/fs
+mkdir -p kernel-5.10/include/linux
+
+echo "=== Applying SUSFS patch to kernel (latest from GitLab) ==="
 cd kernel-5.10
 curl -LSs "https://gitlab.com/simonpunk/susfs4ksu/-/raw/gki-android12-5.10/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch" | patch -p1 --forward || echo "Warning: some hunks failed"
 cd ..
 
-echo "=== Applying SUSFS patch to KernelSU Next ==="
+echo "=== Applying SUSFS patch to KernelSU Next (latest from GitLab) ==="
 cd kernel-5.10/KernelSU-Next
 curl -LSs "https://gitlab.com/simonpunk/susfs4ksu/-/raw/gki-android12-5.10/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" | patch -p1 --forward || echo "Warning: some hunks failed"
 cd ../../..
