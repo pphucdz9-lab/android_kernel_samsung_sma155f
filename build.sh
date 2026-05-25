@@ -59,8 +59,8 @@ _print_runtime() {
 KERNEL_DIR="$DEFAULT_KERNEL_DIR"
 OUT_DIR="$DEFAULT_OUT"
 NO_CLEAN=0
-NO_PATCH=0
-NO_SUSFS=0
+NO_PATCH=1
+NO_SUSFS=1
 BUILD_ONLY=0
 CLEAN_ONLY=0
 JOBS=""
@@ -109,10 +109,10 @@ CMDMISSING=0
 require_cmds=(bash sed awk find git patch curl printf)
 
 PYTHON_BIN=""
-if command -v python2 >/dev/null 2>&1; then
-    PYTHON_BIN=python2
+if command -v python >/dev/null 2>&1; then
+    PYTHON_BIN=python
 else
-    require_cmds+=(python2) # force readable error later
+    require_cmds+=(python) # force readable error later
 fi
 
 for c in "${require_cmds[@]}"; do
@@ -258,7 +258,7 @@ if [[ $BUILD_ONLY -eq 0 ]]; then
     
     # 4. Generate build.config
     info -n "Generating build configs..."
-    python2 scripts/gen_build_config.py --kernel-defconfig a15_00_defconfig --kernel-defconfig-overlays entry_level.config -m user -o $OUT_DIR/build.config
+    python scripts/gen_build_config.py --kernel-defconfig a15_00_defconfig --kernel-defconfig-overlays entry_level.config -m user -o $OUT_DIR/build.config
     popd > /dev/null
     CONFIG_END=$(_ts)
 fi

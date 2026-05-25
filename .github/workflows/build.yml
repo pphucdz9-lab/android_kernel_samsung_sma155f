@@ -1,0 +1,60 @@
+name: Build Kernel SM-A155F
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            git ccache automake flex lzop bison gperf build-essential \
+            zip curl zlib1g-dev g++-multilib libxml2-utils bzip2 libbz2-dev \
+            squashfs-tools dpkg-dev liblz4-tool make libssl-dev \
+            libswitch-perl libxml-simple-perl xz-utils cpio python3-pip \
+            clang lld llvm lz4 openssl
+
+      - name: Download toolchain from Google Drive
+        env:
+          TOOLCHAIN_FILE_ID: ${{ secrets.TOOLCHAIN_FILE_ID }}
+        run: |
+          pip install gdown
+          gdown "https://drive.google.com/uc?id=${TOOLCHAIN_FILE_ID}" -O toolchain.tar.gz
+          mkdir -p toolchain
+          tar -xzf toolchain.tar.gz -C toolchain/
+          TOOLCHAIN_DIR=$(ls -d toolchain/*/ | head -1)
+          echo "TOOLCHAIN_PATH=$(pwd)/${TOOLCHAIN_DIR%/}" >> $GITHUB_ENV
+
+      - name: Setup environment
+        run: |
+          echo "${TOOLCHAIN_PATH}/bin" >> $GITHUB_PATH
+          mkdir -p out/target/product/a15/obj/KERNEL_OBJ
+          echo "ARCH=arm64" >> $GITHUB_ENV
+          echo "CROSS_COMPILE=aarch64-linux-gnu-" >> $GITHUB_ENV
+          echo "CROSS_COMPILE_COMPAT=arm-linux-gnueabi-" >> $GITHUB_ENV
+          echo "OUT_DIR=$(pwd)/out/target/product/a15/obj/KERNEL_OBJ" >> $GITHUB_ENV
+          echo "DIST_DIR=$(pwd)/out/target/product/a15/obj/KERNEL_OBJ" >> $GITHUB_ENV
+
+      - name: Build kernel
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Upload kernel image
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-image
+          path: out/target/product/a15/obj/KERNEL_OBJ/kernel-5.10/arch/arm64/boot/Image.gz
+
+      - name: Upload kernel modules
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-modules
+          path: out/target/product/a15/obj/KERNEL_OBJ/*.ko
