@@ -6,6 +6,8 @@ SCRIPT_NAME="$(basename "$0")"
 DEFAULT_KERNEL_DIR="kernel-5.10"
 DEFAULT_DEFCONFIG="arch/arm64/configs/a15_00_defconfig"
 DEFAULT_OUT="../out/target/product/a15/obj/KERNEL_OBJ"
+# URL không còn được dùng trực tiếp nữa vì script apply_susfs.sh sẽ tự xử lý,
+# nhưng giữ lại để tránh lỗi tham chiếu nếu có.
 KERNELSU_SETUP_URL="https://raw.githubusercontent.com/poqdavid/KernelSU-Next/dev/kernel/setup.sh"
 BASE_KSU_VERSION=30000
 
@@ -59,8 +61,8 @@ _print_runtime() {
 KERNEL_DIR="$DEFAULT_KERNEL_DIR"
 OUT_DIR="$DEFAULT_OUT"
 NO_CLEAN=0
-NO_PATCH=0
-NO_SUSFS=0
+NO_PATCH=0   # Bật tích hợp KernelSU + SUSFS
+NO_SUSFS=0   # Bật SUSFS
 BUILD_ONLY=0
 CLEAN_ONLY=0
 JOBS=""
@@ -71,8 +73,8 @@ while [[ $# -gt 0 ]]; do
         --kernel-dir) KERNEL_DIR="$2"; shift 2;;
         --out-dir) OUT_DIR="$2"; shift 2;;
         --no-clean) NO_CLEAN=1; shift;;
-        --no-patch) NO_PATCH=0; shift;;
-        --no-susfs) NO_SUSFS=0; shift;;
+        --no-patch) NO_PATCH=1; shift;;   # Sửa lại: nếu truyền --no-patch thì tắt patch
+        --no-susfs) NO_SUSFS=1; shift;;   # Sửa lại: nếu truyền --no-susfs thì tắt SUSFS
         --build-only) BUILD_ONLY=1; shift;;
         --clean) CLEAN_ONLY=1; shift;;
         -j*) JOBS="${1#-j}"; [[ -z "$JOBS" ]] && { JOBS="$2"; shift; }; shift;;
@@ -267,11 +269,13 @@ fi
 if [[ $NO_PATCH -eq 0 && $BUILD_ONLY -eq 0 ]]; then
     PATCH_START=$(_ts)
     
+    # Gọi script tích hợp KernelSU Next + SUSFS tự động
     info -n "Running SUSFS integration script..."
     ./scripts/apply_susfs.sh
     
     pushd "$KERNEL_DIR" > /dev/null
     
+    # Áp dụng các bản vá riêng cho thiết bị Samsung (nếu có)
     info -n "Applying Samsung device patches..."
     for file in $(find ../patches/kernel_patches/samsung/SM-A155F-Oneui7 -maxdepth 2 -name "*.patch"); do
         info "Patching $file"
