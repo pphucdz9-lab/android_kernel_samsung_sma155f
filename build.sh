@@ -263,6 +263,27 @@ if [[ $BUILD_ONLY -eq 0 ]]; then
     CONFIG_END=$(_ts)
 fi
 
+# 5. Patching / KernelSU Setup
+if [[ $NO_PATCH -eq 0 && $BUILD_ONLY -eq 0 ]]; then
+    PATCH_START=$(_ts)
+    
+    info -n "Running SUSFS integration script..."
+    ./scripts/apply_susfs.sh
+    
+    pushd "$KERNEL_DIR" > /dev/null
+    
+    info -n "Applying Samsung device patches..."
+    for file in $(find ../patches/kernel_patches/samsung/SM-A155F-Oneui7 -maxdepth 2 -name "*.patch"); do
+        info "Patching $file"
+        patch -p1 --forward < "$file" || true
+    done
+    
+    popd > /dev/null
+    PATCH_END=$(_ts)
+else
+    warn -n "Patching steps skipped. If you want to apply patches and set up KernelSU, remove the --no-patch flag."
+fi
+
 # 6. Build
 BUILD_START=$(_ts)
 info -n "Starting Kernel Build..."
