@@ -21,4 +21,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: susfs4ksu-module
-          path: patches/susfs4ksu/ksu_module_susfs.zip
+          path: patches/susfs4ksu/susfs4ksu-module.zip
