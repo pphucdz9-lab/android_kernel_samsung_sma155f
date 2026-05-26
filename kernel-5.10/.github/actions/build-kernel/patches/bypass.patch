@@ -1,0 +1,52 @@
+diff --git a/anykernel.sh b/anykernel.sh
+index 35b6e59..7936667 100755
+--- a/anykernel.sh
++++ b/anykernel.sh
+@@ -45,6 +45,47 @@ esac
+ ui_print " " "  -> Wild Kernels Supported: $ksu_supported"
+ $ksu_supported || abort "  -> Non-GKI device, abort."
+ 
++handle_input() {
++    /system/bin/getevent -lq 2>/dev/null | while IFS= read -r line; do
++        case "$line" in
++            *KEY_VOLUMEUP*DOWN*) echo "bypass"; break ;;
++            *KEY_VOLUMEDOWN*DOWN*) echo "normal"; break ;;
++            *KEY_POWER*DOWN*) echo "cancel"; break ;;
++        esac
++    done
++}
++
++choose_flash_mode() {
++    ui_print "  -> Most users do not need Bypass; try Normal first!"
++    ui_print "  -> This only swaps the Image for compatibility workarounds, this doesn't help with hiding root."
++    ui_print "  -> VOL+ = Bypass"
++    ui_print "  -> VOL- = Normal"
++    ui_print "  -> POWER = Cancel"
++
++    while true; do
++        case $(handle_input) in
++            normal)
++                ui_print "  -> Selected: Normal"
++                return 0
++                ;;
++            bypass)
++                ui_print "  -> Selected: Bypass"
++                if [ -f "$AKHOME/Bypass-Image" ]; then
++                    cp -f "$AKHOME/Bypass-Image" "$AKHOME/Image"
++                    ui_print "  -> Using Bypass-Image for this flash"
++                    return 0
++                fi
++               abort "  -> ERROR: Bypass-Image not found. Abort."
++                ;;
++            cancel)
++                abort "  -> Cancelled by POWER button. Abort."
++                ;;
++        esac
++    done
++}
++
++choose_flash_mode
++
+ # boot install
+ split_boot
+ 
