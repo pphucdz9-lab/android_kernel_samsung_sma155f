@@ -6,9 +6,6 @@ SCRIPT_NAME="$(basename "$0")"
 DEFAULT_KERNEL_DIR="kernel-5.10"
 DEFAULT_DEFCONFIG="arch/arm64/configs/a15_00_defconfig"
 DEFAULT_OUT="../out/target/product/a15/obj/KERNEL_OBJ"
-# URL không còn được dùng trực tiếp nữa vì script apply_susfs.sh sẽ tự xử lý,
-# nhưng giữ lại để tránh lỗi tham chiếu nếu có.
-KERNELSU_SETUP_URL="https://raw.githubusercontent.com/poqdavid/KernelSU-Next/dev/kernel/setup.sh"
 BASE_KSU_VERSION=30000
 
 # -------- Colors & logging --------
@@ -26,10 +23,8 @@ _log_handler() {
     local color="$1"
     local level="$2"
     shift 2
-    
     local nl=""
     [[ "$1" == "-n" ]] && { nl="\n"; shift; }
-    
     printf "${nl}%b[%s] %s%b\n" "${color}" "${level}" "$*" "${RESET}"
 }
 
@@ -61,8 +56,8 @@ _print_runtime() {
 KERNEL_DIR="$DEFAULT_KERNEL_DIR"
 OUT_DIR="$DEFAULT_OUT"
 NO_CLEAN=0
-NO_PATCH=0   # Bật tích hợp KernelSU + SUSFS
-NO_SUSFS=0   # Bật SUSFS
+NO_PATCH=0
+NO_SUSFS=0
 BUILD_ONLY=0
 CLEAN_ONLY=0
 JOBS=""
@@ -73,8 +68,8 @@ while [[ $# -gt 0 ]]; do
         --kernel-dir) KERNEL_DIR="$2"; shift 2;;
         --out-dir) OUT_DIR="$2"; shift 2;;
         --no-clean) NO_CLEAN=1; shift;;
-        --no-patch) NO_PATCH=0; shift;;   # Sửa lại: nếu truyền --no-patch thì tắt patch
-        --no-susfs) NO_SUSFS=0; shift;;   # Sửa lại: nếu truyền --no-susfs thì tắt SUSFS
+        --no-patch) NO_PATCH=1; shift;;
+        --no-susfs) NO_SUSFS=1; shift;;
         --build-only) BUILD_ONLY=1; shift;;
         --clean) CLEAN_ONLY=1; shift;;
         -j*) JOBS="${1#-j}"; [[ -z "$JOBS" ]] && { JOBS="$2"; shift; }; shift;;
@@ -114,7 +109,7 @@ PYTHON_BIN=""
 if command -v python >/dev/null 2>&1; then
     PYTHON_BIN=python
 else
-    require_cmds+=(python) # force readable error later
+    require_cmds+=(python)
 fi
 
 for c in "${require_cmds[@]}"; do
@@ -124,7 +119,6 @@ for c in "${require_cmds[@]}"; do
     fi
 done
 
-# 2. Check if any commands were missing
 if [ $CMDMISSING -eq 1 ]; then
     echo "--------------------------------------------------"
     echo "Please install the missing packages and try again."
@@ -146,17 +140,13 @@ trap cleanup EXIT
 
 # 1. Clean Step
 if [[ $NO_CLEAN -eq 0 ]]; then
-    
     info -n "Started cleaning up..."
-    
     git restore kernel-5.10/
     git clean -fd kernel-5.10/
     rm -rf kernel-5.10/KernelSU
     rm -rf kernel-5.10/KernelSU-Next
     rm -rf out
-    
     info "Finsished cleaning up..."
-    
     if [[ $CLEAN_ONLY -eq 1 ]]; then
         exit 0
     fi
@@ -169,96 +159,45 @@ if [[ $BUILD_ONLY -eq 0 ]]; then
     CONFIG_TOOL="./${KERNEL_DIR}/scripts/config"
     DEFCONFIG="./${KERNEL_DIR}/${DEFAULT_DEFCONFIG}"
     
-    # Samsung & Security
     $CONFIG_TOOL --file $DEFCONFIG \
-    --set-val UH n \
-    --set-val RKP n \
-    --set-val KDP n \
-    --set-val SECURITY_DEFEX n \
-    --set-val INTEGRITY n \
-    --set-val FIVE n \
-    --set-val TRIM_UNUSED_KSYMS n \
-    --set-val PROCA n \
-    --set-val PROCA_GKI_10 n \
-    --set-val PROCA_S_OS n \
-    --set-val PROCA_CERTIFICATES_XATTR n \
-    --set-val PROCA_CERT_ENG n \
-    --set-val PROCA_CERT_USER n \
-    --set-val GAF_V6 n \
-    --set-val FIVE n \
-    --set-val FIVE_CERT_USER n \
-    --set-val FIVE_DEFAULT_HASH n \
-    --set-val UH_RKP n \
-    --set-val UH_LKMAUTH n \
-    --set-val UH_LKM_BLOCK n \
-    --set-val RKP_CFP_JOPP n \
-    --set-val RKP_CFP n \
-    --set-val KDP_CRED n \
-    --set-val KDP_NS n \
-    --set-val KDP_TEST n \
-    --set-val RKP_CRED n \
-    --set-val MODULES y \
-    --set-val MODULE_FORCE_LOAD y \
-    --set-val MODULE_UNLOAD y \
-    --set-val MODULE_FORCE_UNLOAD y \
-    --set-val MODVERSIONS y \
-    --set-val MODULE_SRCVERSION_ALL n \
-    --set-val MODULE_SIG n \
-    --set-val MODULE_COMPRESS n
+    --set-val UH n --set-val RKP n --set-val KDP n --set-val SECURITY_DEFEX n \
+    --set-val INTEGRITY n --set-val FIVE n --set-val TRIM_UNUSED_KSYMS n \
+    --set-val PROCA n --set-val PROCA_GKI_10 n --set-val PROCA_S_OS n \
+    --set-val PROCA_CERTIFICATES_XATTR n --set-val PROCA_CERT_ENG n \
+    --set-val PROCA_CERT_USER n --set-val GAF_V6 n --set-val FIVE n \
+    --set-val FIVE_CERT_USER n --set-val FIVE_DEFAULT_HASH n --set-val UH_RKP n \
+    --set-val UH_LKMAUTH n --set-val UH_LKM_BLOCK n --set-val RKP_CFP_JOPP n \
+    --set-val RKP_CFP n --set-val KDP_CRED n --set-val KDP_NS n --set-val KDP_TEST n \
+    --set-val RKP_CRED n --set-val MODULES y --set-val MODULE_FORCE_LOAD y \
+    --set-val MODULE_UNLOAD y --set-val MODULE_FORCE_UNLOAD y --set-val MODVERSIONS y \
+    --set-val MODULE_SRCVERSION_ALL n --set-val MODULE_SIG n --set-val MODULE_COMPRESS n
     
-    # Optimizations (BBR, etc)
     $CONFIG_TOOL --file $DEFCONFIG \
-    --set-val IP_NF_TARGET_TTL y \
-    --set-val IP6_NF_TARGET_HL y \
-    --set-val IP6_NF_MATCH_HL y \
-    --set-val TCP_CONG_ADVANCED y \
-    --set-val TCP_CONG_BBR y \
-    --set-val NET_SCH_FQ y \
-    --set-val TCP_CONG_BIC n \
-    --set-val TCP_CONG_WESTWOOD n \
-    --set-val TCP_CONG_HTCP n \
-    --set-val DEFAULT_BBR y \
-    --set-val DEFAULT_BIC n \
-    --set-str DEFAULT_TCP_CONG "bbr" \
-    --set-val DEFAULT_RENO n \
-    --set-val DEFAULT_CUBIC n \
-    --set-val IP6_NF_NAT y \
-    --set-val IP6_NF_TARGET_MASQUERADE y \
-    --set-val NF_NAT_IPV6 y
+    --set-val IP_NF_TARGET_TTL y --set-val IP6_NF_TARGET_HL y --set-val IP6_NF_MATCH_HL y \
+    --set-val TCP_CONG_ADVANCED y --set-val TCP_CONG_BBR y --set-val NET_SCH_FQ y \
+    --set-val TCP_CONG_BIC n --set-val TCP_CONG_WESTWOOD n --set-val TCP_CONG_HTCP n \
+    --set-val DEFAULT_BBR y --set-val DEFAULT_BIC n --set-str DEFAULT_TCP_CONG "bbr" \
+    --set-val DEFAULT_RENO n --set-val DEFAULT_CUBIC n --set-val IP6_NF_NAT y \
+    --set-val IP6_NF_TARGET_MASQUERADE y --set-val NF_NAT_IPV6 y
     
-    # KernelSU Next & SUSFS
     $CONFIG_TOOL --file $DEFCONFIG \
-    --set-val KSU y \
-    --set-val KSU_KPROBES_HOOK n \
-    --set-val KSU_SUSFS y \
-    --set-val KSU_SUSFS_HAS_MAGIC_MOUNT y \
-    --set-val KSU_SUSFS_SUS_PATH y \
-    --set-val KSU_SUSFS_SUS_MOUNT y \
-    --set-val KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT y \
-    --set-val KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT y \
-    --set-val KSU_SUSFS_SUS_KSTAT y \
-    --set-val KSU_SUSFS_SUS_OVERLAYFS n \
-    --set-val KSU_SUSFS_TRY_UMOUNT y \
-    --set-val KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT y \
-    --set-val KSU_SUSFS_SPOOF_UNAME y \
-    --set-val KSU_SUSFS_ENABLE_LOG y \
-    --set-val KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS y \
-    --set-val KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG y \
-    --set-val KSU_SUSFS_OPEN_REDIRECT y \
-    --set-val KSU_SUSFS_SUS_MAP y \
-    --set-val KSU_SUSFS_SUS_SU n \
-    --set-val OVERLAY_FS y \
-    --set-val TMPFS_XATTR y \
-    --set-val TMPFS_POSIX_ACL y
+    --set-val KSU y --set-val KSU_KPROBES_HOOK n --set-val KSU_SUSFS y \
+    --set-val KSU_SUSFS_HAS_MAGIC_MOUNT y --set-val KSU_SUSFS_SUS_PATH y \
+    --set-val KSU_SUSFS_SUS_MOUNT y --set-val KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT y \
+    --set-val KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT y --set-val KSU_SUSFS_SUS_KSTAT y \
+    --set-val KSU_SUSFS_SUS_OVERLAYFS n --set-val KSU_SUSFS_TRY_UMOUNT y \
+    --set-val KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT y --set-val KSU_SUSFS_SPOOF_UNAME y \
+    --set-val KSU_SUSFS_ENABLE_LOG y --set-val KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS y \
+    --set-val KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG y --set-val KSU_SUSFS_OPEN_REDIRECT y \
+    --set-val KSU_SUSFS_SUS_MAP y --set-val KSU_SUSFS_SUS_SU n --set-val OVERLAY_FS y \
+    --set-val TMPFS_XATTR y --set-val TMPFS_POSIX_ACL y
     
-    # 3. Metadata Configuration
     info -n "Configuring Kernel metadata..."
     pushd "$KERNEL_DIR" > /dev/null
     sed -i '$s|echo "\$res"|echo "-android12-9-31117096"|' ./scripts/setlocalversion
     perl -pi -e 's{UTS_VERSION="\$\(echo \$UTS_VERSION \$CONFIG_FLAGS \$TIMESTAMP \| cut -b -\$UTS_LEN\)"}{UTS_VERSION="#1 SMP PREEMPT Thu Jul 31 08:40:06 UTC 2025"}' ./scripts/mkcompile_h
     sed -i 's/-dirty//' ./scripts/setlocalversion
     
-    # 4. Generate build.config
     info -n "Generating build configs..."
     python scripts/gen_build_config.py --kernel-defconfig a15_00_defconfig --kernel-defconfig-overlays entry_level.config -m user -o $OUT_DIR/build.config
     popd > /dev/null
@@ -269,21 +208,10 @@ fi
 if [[ $NO_PATCH -eq 0 && $BUILD_ONLY -eq 0 ]]; then
     PATCH_START=$(_ts)
     
-    # Gọi script tích hợp KernelSU Next + SUSFS tự động
-    info -n "Running SUSFS integration script (fixed)..."
-    ./scripts/apply_susfs_fixed.sh
-    ./scripts/apply_susfs.sh
+    # Gọi script tích hợp KernelSU Next + SUSFS tự động (sử dụng nhánh next-susfs có sẵn SUSFS)
+    info -n "Running SUSFS integration script (final)..."
+    ./scripts/apply_susfs_final.sh
     
-    pushd "$KERNEL_DIR" > /dev/null
-    
-    # Áp dụng các bản vá riêng cho thiết bị Samsung (nếu có)
-    info -n "Applying Samsung device patches..."
-    for file in $(find ../patches/kernel_patches/samsung/SM-A155F-Oneui7 -maxdepth 2 -name "*.patch"); do
-        info "Patching $file"
-        patch -p1 --forward < "$file" || true
-    done
-    
-    popd > /dev/null
     PATCH_END=$(_ts)
 else
     warn -n "Patching steps skipped. If you want to apply patches and set up KernelSU, remove the --no-patch flag."
