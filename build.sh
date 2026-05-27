@@ -211,8 +211,6 @@ if [[ $NO_PATCH -eq 0 && $BUILD_ONLY -eq 0 ]]; then
     # Gọi script tích hợp KernelSU Next + SUSFS tự động (sử dụng nhánh next-susfs có sẵn SUSFS)
     info -n "Running SUSFS integration script (KernelSU)..."
     ./scripts/apply_susfs_kernelsu.sh
-    ./scripts/apply_susfs_final.sh
-    
     PATCH_END=$(_ts)
 else
     warn -n "Patching steps skipped. If you want to apply patches and set up KernelSU, remove the --no-patch flag."

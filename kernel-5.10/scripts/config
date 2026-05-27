@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0
-# This script is based on the config script from the android_kernel_samsung_sm8550 project
-# Source: https://github.com/fei-ke/android_kernel_samsung_sm8550/blob/kernelsu/scripts/config
-# License: GPL-2.0
 # Manipulate options in a .config file from the command line
 
 myname=${0##*/}
@@ -226,7 +223,6 @@ while [ "$1" != "" ] ; do
 		;;
 
 	*)
-		echo "bad command: $CMD" >&2
 		usage
 		;;
 	esac
