@@ -34,6 +34,9 @@ cd kernel-5.10
 patch -p1 --forward < ../patches/susfs4ksu/kernel_patches/50_add_susfs_in_gki-android12-5.10.patch || echo "Cảnh báo: một số hunks thất bại"
 cd ..
 
+echo "=== Sửa lỗi vá tự động ==="
+./scripts/fix_susfs_rejections.sh
+
 echo "=== Áp dụng SUSFS patch cho KernelSU ==="
 cd kernel-5.10/KernelSU
 patch -p1 --forward < ../../patches/susfs4ksu/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch || echo "Cảnh báo: một số hunks thất bại"
