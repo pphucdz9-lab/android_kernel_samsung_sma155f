@@ -100,6 +100,9 @@
 #ifdef CONFIG_KSU_SUSFS_SUS_MAP
 #include <linux/susfs_def.h>
 #endif
+#ifdef CONFIG_KSU_SUSFS_SUS_MAP
+#include <linux/susfs_def.h>
+#endif
 
 #ifdef CONFIG_KSU_SUSFS_SUS_MAP
 #include <linux/susfs_def.h>
@@ -109,6 +112,12 @@
 #include <linux/proca.h>
 #include <trace/events/oom.h>
 #include "internal.h"
+#if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
+#include <linux/susfs_def.h>
+#endif
+#if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
+#include <linux/susfs_def.h>
+#endif
 #if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
 #include <linux/susfs_def.h>
 #endif
@@ -1628,6 +1637,9 @@ sched_autogroup_write(struct file *file, const char __user *buf,
 static int sched_autogroup_open(struct inode *inode, struct file *filp)
 {
 	int ret;
+#ifdef CONFIG_KSU_SUSFS_SUS_MAP
+	struct inode *inode;
+#endif
 
 	ret = single_open(filp, sched_autogroup_show, NULL);
 	if (!ret) {
@@ -3213,6 +3225,9 @@ static int proc_setgroups_open(struct inode *inode, struct file *file)
 	struct user_namespace *ns = NULL;
 	struct task_struct *task;
 	int ret;
+#ifdef CONFIG_KSU_SUSFS_SUS_MAP
+	struct inode *inode;
+#endif
 
 	ret = -ESRCH;
 	task = get_proc_task(inode);
