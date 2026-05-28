@@ -97,33 +97,10 @@
 #include <linux/time_namespace.h>
 #include <linux/resctrl.h>
 #include <linux/cpufreq_times.h>
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-#include <linux/susfs_def.h>
-#endif
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-#include <linux/susfs_def.h>
-#endif
-
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-#include <linux/susfs_def.h>
-#endif
-
 #include <linux/task_integrity.h>
 #include <linux/proca.h>
 #include <trace/events/oom.h>
 #include "internal.h"
-#if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
-#include <linux/susfs_def.h>
-#endif
-#if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
-#include <linux/susfs_def.h>
-#endif
-#if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
-#include <linux/susfs_def.h>
-#endif
-#if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
-#include <linux/susfs_def.h>
-#endif
 #include "fd.h"
 
 #include "../../lib/kstrtox.h"
@@ -848,9 +825,6 @@ static int proc_single_show(struct seq_file *m, void *v)
 	struct pid *pid = proc_pid(inode);
 	struct task_struct *task;
 	int ret;
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-	struct inode *inode;
-#endif
 
 	task = get_pid_task(pid, PIDTYPE_PID);
 	if (!task)
@@ -924,9 +898,6 @@ static ssize_t mem_rw(struct file *file, char __user *buf,
 	ssize_t copied;
 	char *page;
 	unsigned int flags;
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-	struct vm_area_struct *vma;
-#endif
 
 	if (!mm)
 		return 0;
@@ -943,25 +914,6 @@ static ssize_t mem_rw(struct file *file, char __user *buf,
 
 	while (count > 0) {
 		size_t this_len = min_t(size_t, count, PAGE_SIZE);
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-		vma = find_vma(mm, addr);
-		if (vma && vma->vm_file) {
-			struct inode *inode = file_inode(vma->vm_file);
-			if (inode->i_mapping &&
-				unlikely(test_bit(AS_FLAGS_SUS_MAP, &inode->i_mapping->flags) &&
-				susfs_is_current_proc_umounted_app()))
-			{
-				if (write) {
-					copied = -EFAULT;
-				} else {
-					copied = -EIO;
-				}
-				*ppos = addr;
-				mmput(mm);
-				goto free;
-			}
-		}
-#endif
 
 		if (write && copy_from_user(page, buf, this_len)) {
 			copied = -EFAULT;
@@ -1643,9 +1595,6 @@ sched_autogroup_write(struct file *file, const char __user *buf,
 static int sched_autogroup_open(struct inode *inode, struct file *filp)
 {
 	int ret;
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-	struct inode *inode;
-#endif
 
 	ret = single_open(filp, sched_autogroup_show, NULL);
 	if (!ret) {
@@ -2453,9 +2402,6 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
 	GENRADIX(struct map_files_info) fa;
 	struct map_files_info *p;
 	int ret;
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-	struct inode *inode;
-#endif
 
 	genradix_init(&fa);
 
@@ -2497,13 +2443,6 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
 	for (vma = mm->mmap, pos = 2; vma; vma = vma->vm_next) {
 		if (!vma->vm_file)
 			continue;
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-		inode = file_inode(vma->vm_file);
-		if (inode->i_mapping &&
-			unlikely(test_bit(AS_FLAGS_SUS_MAP, &inode->i_mapping->flags) &&
-			susfs_is_current_proc_umounted_app()))
-			continue;
-#endif
 		if (++pos <= ctx->pos)
 			continue;
 
@@ -3015,9 +2954,6 @@ static ssize_t proc_coredump_filter_read(struct file *file, char __user *buf,
 	char buffer[PROC_NUMBUF];
 	size_t len;
 	int ret;
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-	struct inode *inode;
-#endif
 
 	if (!task)
 		return -ESRCH;
@@ -3231,9 +3167,6 @@ static int proc_setgroups_open(struct inode *inode, struct file *file)
 	struct user_namespace *ns = NULL;
 	struct task_struct *task;
 	int ret;
-#ifdef CONFIG_KSU_SUSFS_SUS_MAP
-	struct inode *inode;
-#endif
 
 	ret = -ESRCH;
 	task = get_proc_task(inode);
