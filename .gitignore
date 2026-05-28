@@ -2,3 +2,4 @@
 out/
 scripts/bin/certs/
 scripts/bin/workspace/kernel-5.10/KernelSU/
+kernel-5.10/KernelSU/
