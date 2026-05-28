@@ -121,6 +121,9 @@
 #if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
 #include <linux/susfs_def.h>
 #endif
+#if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
+#include <linux/susfs_def.h>
+#endif
 #include "fd.h"
 
 #include "../../lib/kstrtox.h"
@@ -845,6 +848,9 @@ static int proc_single_show(struct seq_file *m, void *v)
 	struct pid *pid = proc_pid(inode);
 	struct task_struct *task;
 	int ret;
+#ifdef CONFIG_KSU_SUSFS_SUS_MAP
+	struct inode *inode;
+#endif
 
 	task = get_pid_task(pid, PIDTYPE_PID);
 	if (!task)

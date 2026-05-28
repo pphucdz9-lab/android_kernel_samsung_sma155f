@@ -1,4 +1,4 @@
 *.img
 out/
 scripts/bin/certs/
-scripts/bin/workspace/
+scripts/bin/workspace/kernel-5.10/KernelSU/
